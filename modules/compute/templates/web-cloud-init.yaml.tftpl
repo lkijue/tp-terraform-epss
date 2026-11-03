@@ -1,0 +1,21 @@
+#cloud-config
+# Serveur web : nginx + une page qui affiche le nom de la VM
+# (permet de voir le Load Balancer alterner entre web-1 et web-2).
+package_update: true
+packages:
+  - nginx
+
+runcmd:
+  - |
+    cat > /var/www/html/index.html <<EOF
+    <!doctype html>
+    <html lang="fr">
+    <head><meta charset="utf-8"><title>${project} - ${environment}</title></head>
+    <body style="font-family:sans-serif;text-align:center;margin-top:15vh">
+      <h1>${project} &middot; environnement ${environment}</h1>
+      <p>Servi par la VM : <strong>$(hostname)</strong></p>
+      <p>IP privée : $(hostname -I | awk '{print $1}')</p>
+    </body>
+    </html>
+    EOF
+  - systemctl enable --now nginx

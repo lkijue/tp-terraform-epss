@@ -1,0 +1,576 @@
+<title>Guide Terraform Azure</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : manuel de terrain — sommaire collant à gauche, une colonne d'étapes cochables à droite. */
+:root {
+  --paper: #f5f6f3;
+  --sheet: #ffffff;
+  --ink: #1b2330;
+  --muted: #5b6573;
+  --rule: #d9ddd6;
+  --accent: #1f4fd1;
+  --accent-soft: #e7edfb;
+  --done: #1e7a4f;
+  --done-soft: #e3f2ea;
+  --warn: #9a5a00;
+  --warn-soft: #fbf0dc;
+  --code-bg: #1d2430;
+  --code-fg: #e6e9ee;
+  --code-dim: #8d97a6;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12161c; --sheet: #191f27; --ink: #e4e8ee; --muted: #9aa4b2; --rule: #2c3440;
+    --accent: #7c9cff; --accent-soft: #1d2848; --done: #5fd39a; --done-soft: #15302a;
+    --warn: #f0b45c; --warn-soft: #33270f; --code-bg: #0b0e13; --code-fg: #e6e9ee; --code-dim: #7d8796;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #12161c; --sheet: #191f27; --ink: #e4e8ee; --muted: #9aa4b2; --rule: #2c3440;
+  --accent: #7c9cff; --accent-soft: #1d2848; --done: #5fd39a; --done-soft: #15302a;
+  --warn: #f0b45c; --warn-soft: #33270f; --code-bg: #0b0e13; --code-fg: #e6e9ee; --code-dim: #7d8796;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 16px/1.6 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; padding-block: 32px 80px; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 20px; } nav.toc { position: static !important; max-height: none !important; } }
+
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; font-size: 14px; }
+.toc h2 { font: 600 13px/1.2 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.toc a { display: grid; grid-template-columns: 26px 1fr auto; gap: 6px; align-items: baseline; padding: 5px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+.toc a:hover, .toc a:focus-visible { background: var(--accent-soft); outline: none; }
+.toc .n { font: 500 12px var(--f-mono); color: var(--muted); }
+.toc .c { font: 500 11px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.toc a.complete .c { color: var(--done); }
+.toc a.complete .n { color: var(--done); }
+.progress { margin: 16px 0 6px; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
+.progress > i { display: block; height: 100%; width: 0; background: var(--done); transition: width .3s; }
+.progress-label { font: 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.reset { margin-top: 10px; font: 12px var(--f-body); background: none; border: 1px solid var(--rule); color: var(--muted); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+
+header.top { grid-column: 1 / -1; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+header.top .eyebrow { font: 600 13px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(30px, 5vw, 46px)/1.05 var(--f-display); margin: 6px 0 12px; text-wrap: balance; }
+header.top p { max-width: 68ch; margin: 0; color: var(--muted); }
+
+.vars { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; padding: 14px 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; }
+.vars label { display: grid; gap: 4px; font: 500 13px var(--f-body); color: var(--muted); }
+.vars input { font: 14px var(--f-mono); padding: 7px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); width: 230px; max-width: 100%; }
+.vars input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.vars small { flex-basis: 100%; color: var(--muted); font-size: 13px; }
+
+main { min-width: 0; display: grid; gap: 28px; }
+section.step { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 22px 24px 18px; scroll-margin-top: 16px; }
+@media (max-width: 500px) { section.step { padding: 18px 14px 14px; } }
+.step-head { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; border-bottom: 1px solid var(--rule); padding-bottom: 10px; margin-bottom: 14px; }
+.step-head .num { font: 600 15px var(--f-mono); color: var(--accent); }
+.step-head h2 { font: 700 24px/1.15 var(--f-display); margin: 0; flex: 1; min-width: 0; text-wrap: balance; }
+.step-head .time { font: 12px var(--f-mono); color: var(--muted); }
+section.step.complete .step-head .num { color: var(--done); }
+.why { color: var(--muted); margin: 0 0 14px; max-width: 70ch; }
+
+ul.todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+ul.todo > li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; }
+ul.todo > li > input[type=checkbox] { width: 20px; height: 20px; margin: 3px 0 0; accent-color: var(--done); cursor: pointer; }
+ul.todo > li > input:checked + .body > p:first-child { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--done); }
+.body { min-width: 0; display: grid; gap: 8px; }
+.body > p { margin: 0; }
+.body ol, .body ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+b.ui { font-weight: 600; background: var(--accent-soft); color: var(--ink); padding: 0 5px; border-radius: 4px; white-space: nowrap; }
+code { font: 0.9em var(--f-mono); background: var(--paper); border: 1px solid var(--rule); padding: 0 4px; border-radius: 4px; overflow-wrap: anywhere; }
+kbd { font: 12px var(--f-mono); border: 1px solid var(--rule); border-bottom-width: 2px; padding: 0 5px; border-radius: 4px; background: var(--paper); }
+
+.cmd { position: relative; background: var(--code-bg); color: var(--code-fg); border-radius: 8px; overflow: hidden; }
+.cmd pre { margin: 0; padding: 12px 84px 12px 14px; overflow-x: auto; font: 13.5px/1.55 var(--f-mono); white-space: pre; }
+.cmd .lang { position: absolute; top: 8px; left: 14px; font: 10px var(--f-mono); color: var(--code-dim); letter-spacing: .08em; text-transform: uppercase; }
+.cmd.labeled pre { padding-top: 26px; }
+.cmd button { position: absolute; top: 8px; right: 8px; font: 500 12px var(--f-body); color: var(--code-fg); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.cmd button:hover, .cmd button:focus-visible { background: rgba(255,255,255,.2); outline: none; }
+.cmd .v { color: #ffd479; }
+.cmd .cm { color: var(--code-dim); }
+
+.expect, .stuck, .note { border-radius: 8px; padding: 10px 14px; font-size: 15px; }
+.expect { background: var(--done-soft); border-left: 3px solid var(--done); }
+.expect strong, .stuck summary, .note strong { font: 600 13px var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
+.expect strong { color: var(--done); display: block; }
+.note { background: var(--accent-soft); border-left: 3px solid var(--accent); }
+.note strong { color: var(--accent); display: block; }
+details.stuck { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+.stuck summary { color: var(--warn); cursor: pointer; }
+.stuck > div { margin-top: 8px; display: grid; gap: 6px; }
+.stuck p { margin: 0; }
+
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+.tbl { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 12px var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--paper); }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+
+.overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.overview > div { border-top: 2px solid var(--ink); padding-top: 8px; }
+.overview h3 { font: 600 15px var(--f-display); margin: 0 0 4px; }
+.overview p { margin: 0; color: var(--muted); font-size: 14.5px; }
+h3.sub { font: 600 17px var(--f-display); margin: 18px 0 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Projet CloudTech · Azure for Students · Terraform</div>
+    <h1>Déployer l'infra multi-environnement, clic par clic</h1>
+    <p>Le code Terraform est déjà écrit et testé dans <code>Downloads\terraform-azure-project</code>. Ce guide te fait installer les outils, brancher Azure, GitHub et HCP Terraform, déployer l'environnement dev, le tester, puis tout détruire. Coche chaque case au fur et à mesure : ta progression reste enregistrée dans ce navigateur.</p>
+    <div class="vars" role="group" aria-label="Tes identifiants, insérés automatiquement dans les commandes">
+      <label for="v-gh">Ton pseudo GitHub
+        <input id="v-gh" data-key="gh" placeholder="ex : enzo-pereira" autocomplete="off" spellcheck="false">
+      </label>
+      <label for="v-org">Ton organisation HCP Terraform
+        <input id="v-org" data-key="org" placeholder="ex : cloudtech-enzo" autocomplete="off" spellcheck="false">
+      </label>
+      <label for="v-loc">Ta région Azure
+        <input id="v-loc" data-key="loc" placeholder="francecentral" autocomplete="off" spellcheck="false">
+      </label>
+      <small>Remplis ces champs quand tu les connais (étapes 3, 5 et 6) : les commandes en jaune se mettent à jour toutes seules.</small>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Étapes">
+    <h2>Étapes</h2>
+    <ol id="toc"></ol>
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    <div class="progress-label" id="bar-label">0 / 0 actions</div>
+    <button class="reset" id="reset" type="button">Tout décocher</button>
+  </nav>
+
+  <main>
+    <section class="step" id="s0" data-title="Vue d'ensemble">
+      <div class="step-head"><span class="num">00</span><h2>Vue d'ensemble</h2><span class="time">2 min de lecture</span></div>
+      <div class="overview">
+        <div><h3>Ce qui sera créé</h3><p>Par environnement : 1 Resource Group, 1 VNet + 2 subnets, 2 NSG, 1 IP publique, 1 Load Balancer, 2 VMs web nginx, 1 VM PostgreSQL, 1 Storage Account, 1 Key Vault.</p></div>
+        <div><h3>Qui fait quoi</h3><p>GitHub garde le code et lance la CI. HCP Terraform garde le state et exécute plan / apply sur Azure. Toi, tu cliques sur « Confirm & apply ».</p></div>
+        <div><h3>Budget</h3><p>Environ 1,5 $ par jour par environnement allumé. Sur 100 $, aucun risque si tu détruis après chaque session (étape 15).</p></div>
+        <div><h3>Quota étudiant</h3><p>Un environnement = 3 vCPU. Déploie <strong>un seul environnement à la fois</strong> : dev, puis staging, puis prod.</p></div>
+      </div>
+    </section>
+
+    <section class="step" id="s1" data-title="Installer les outils">
+      <div class="step-head"><span class="num">01</span><h2>Installer Terraform et Azure CLI</h2><span class="time">~10 min</span></div>
+      <p class="why">Git et VS Code sont déjà sur ton PC. Il manque <code>terraform</code> et <code>az</code> (exercice 01 du sujet).</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c1-1"><div class="body"><p>Ouvre le menu Démarrer, tape <b class="ui">PowerShell</b>, clique sur <b class="ui">Windows PowerShell</b>. Colle ces deux commandes (accepte les conditions de winget si on te le demande avec <kbd>Y</kbd>) :</p>
+          <div class="cmd"><pre>winget install -e --id Hashicorp.Terraform
+winget install -e --id Microsoft.AzureCLI</pre></div></div></li>
+        <li><input type="checkbox" id="c1-2"><div class="body"><p><strong>Ferme</strong> la fenêtre PowerShell et ouvres-en une nouvelle (sinon les commandes ne sont pas trouvées). Vérifie :</p>
+          <div class="cmd"><pre>terraform -version
+az version</pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>Terraform v1.x et un bloc JSON avec <code>"azure-cli": "2.x"</code>.</div>
+          <details class="stuck"><summary>Si ça bloque</summary><div><p>« terraform n'est pas reconnu » : redémarre le PC. Si winget n'existe pas, installe « App Installer » depuis le Microsoft Store.</p></div></details></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s2" data-title="Ouvrir le projet">
+      <div class="step-head"><span class="num">02</span><h2>Ouvrir le projet dans VS Code</h2><span class="time">~3 min</span></div>
+      <ul class="todo">
+        <li><input type="checkbox" id="c2-1"><div class="body"><p>Dans PowerShell :</p>
+          <div class="cmd"><pre>cd $HOME\Downloads\terraform-azure-project
+code .</pre></div>
+          <p>VS Code s'ouvre sur le projet. Si VS Code demande « Faire confiance aux auteurs ? », clique <b class="ui">Oui, je fais confiance</b>.</p></div></li>
+        <li><input type="checkbox" id="c2-2"><div class="body"><p>Ouvre le terminal intégré : menu <b class="ui">Terminal</b> → <b class="ui">Nouveau terminal</b> (ou <kbd>Ctrl</kbd>+<kbd>ù</kbd>). <strong>Toutes les commandes suivantes se tapent dans ce terminal</strong>, qui est déjà dans le bon dossier.</p></div></li>
+        <li><input type="checkbox" id="c2-3"><div class="body"><p>Parcours rapidement les dossiers à gauche : <code>environments/</code> (dev, staging, prod), <code>modules/</code> (network, security, compute), <code>policies/</code> (Sentinel), <code>docs/</code>. Le <code>README.md</code> résume tout.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s3" data-title="Azure : connexion et vérifs">
+      <div class="step-head"><span class="num">03</span><h2>Se connecter à Azure et vérifier l'abonnement</h2><span class="time">~10 min</span></div>
+      <p class="why">L'offre étudiante limite les régions et le nombre de vCPU. On vérifie avant de déployer pour éviter les erreurs.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c3-1"><div class="body"><p>Connecte-toi :</p>
+          <div class="cmd"><pre>az login</pre></div>
+          <p>Une page web s'ouvre : choisis ton compte <code>enzo.pereira2@ecoles-…</code>. De retour dans le terminal, si une liste d'abonnements s'affiche, tape le numéro de <b class="ui">Azure for Students</b> puis <kbd>Entrée</kbd>.</p></div></li>
+        <li><input type="checkbox" id="c3-2"><div class="body"><p>Lance le script de vérification :</p>
+          <div class="cmd"><pre>powershell -ExecutionPolicy Bypass -File .\scripts\check-azure.ps1 -Location <span class="v" data-var="loc">francecentral</span></pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>« OK : francecentral est autorisée » et « OK : Standard_B1s est disponible », plus un tableau de quotas où « Total Regional vCPUs » a une limite d'au moins 3.</div>
+          <details class="stuck"><summary>Si la région n'est PAS autorisée</summary><div>
+            <p>Le script affiche la liste des régions autorisées. Choisis-en une en Europe (ex : <code>swedencentral</code>, <code>germanywestcentral</code>, <code>spaincentral</code>…), relance le script avec <code>-Location</code> = cette région jusqu'à avoir les deux OK.</p>
+            <p>Puis dans VS Code : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>H</kbd> (remplacer dans les fichiers), cherche <code>francecentral</code>, remplace par ta région, clique sur l'icône <b class="ui">Remplacer tout</b>. Les 3 <code>terraform.tfvars</code> et la liste des régions autorisées par Sentinel sont mis à jour d'un coup.</p></div></details>
+          <p>Note ta région dans le champ « Ta région Azure » en haut de cette page.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s4" data-title="Clé SSH et IP">
+      <div class="step-head"><span class="num">04</span><h2>Créer ta clé SSH et noter ton IP</h2><span class="time">~5 min</span></div>
+      <p class="why">Les VMs n'acceptent que la connexion par clé SSH, et seulement depuis ton adresse IP.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c4-1"><div class="body"><p>Crée une clé (appuie 3 fois sur <kbd>Entrée</kbd> : emplacement par défaut, pas de phrase secrète) :</p>
+          <div class="cmd"><pre>ssh-keygen -t ed25519</pre></div>
+          <details class="stuck"><summary>Si « already exists. Overwrite? »</summary><div><p>Tape <kbd>n</kbd> : tu as déjà une clé, on la réutilise.</p></div></details></div></li>
+        <li><input type="checkbox" id="c4-2"><div class="body"><p>Affiche la clé <strong>publique</strong> et garde-la sous la main (elle commence par <code>ssh-ed25519</code>, c'est la seule qu'on donne à Azure ; ne partage jamais le fichier sans <code>.pub</code>) :</p>
+          <div class="cmd"><pre>Get-Content $HOME\.ssh\id_ed25519.pub</pre></div></div></li>
+        <li><input type="checkbox" id="c4-3"><div class="body"><p>Affiche ton IP publique au format attendu :</p>
+          <div class="cmd"><pre>"$(Invoke-RestMethod https://api.ipify.org)/32"</pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>Quelque chose comme <code>88.123.45.67/32</code>. Note-le.</div>
+          <div class="note"><strong>À savoir</strong>Si tu changes de réseau (école ↔ maison), ton IP change : il faudra mettre à jour la variable <code>allowed_ssh_cidr</code> dans HCP Terraform (étape 8) et relancer un apply pour que SSH fonctionne. Le site web, lui, reste accessible partout.</div></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s5" data-title="HCP Terraform : compte">
+      <div class="step-head"><span class="num">05</span><h2>Créer ton compte et ton organisation HCP Terraform</h2><span class="time">~5 min</span></div>
+      <p class="why">HCP Terraform (ex-Terraform Cloud) stocke le state de façon sécurisée et exécute les déploiements. Gratuit jusqu'à 500 ressources.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c5-1"><div class="body"><p>Va sur <a href="https://app.terraform.io/public/signup/account" target="_blank" rel="noopener">app.terraform.io</a>, crée un compte (e-mail + mot de passe), puis valide le lien reçu par e-mail.</p></div></li>
+        <li><input type="checkbox" id="c5-2"><div class="body"><p>Choisis <b class="ui">Start from scratch</b> (ou <b class="ui">Create organization</b>). Nom de l'organisation : par exemple <code>cloudtech-</code> + ton pseudo (minuscules, tirets). Ce nom doit être unique au monde. Écris-le dans le champ « Ton organisation HCP Terraform » en haut de la page.</p></div></li>
+        <li><input type="checkbox" id="c5-3"><div class="body"><p>Dans VS Code : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>H</kbd>, cherche <code>REMPLACE-MOI</code>, remplace par <code><span data-var="org">ton-organisation</span></code>, clique sur <b class="ui">Remplacer tout</b> (icône à droite du champ). Les 3 fichiers <code>environments/*/versions.tf</code> sont modifiés. Enregistre (<kbd>Ctrl</kbd>+<kbd>K</kbd> puis <kbd>S</kbd>).</p></div></li>
+        <li><input type="checkbox" id="c5-4"><div class="body"><p>Connecte ton terminal à HCP Terraform (sert plus tard à lire le state) :</p>
+          <div class="cmd"><pre>terraform login</pre></div>
+          <p>Tape <kbd>yes</kbd>. Une page s'ouvre : clique <b class="ui">Create API token</b>, copie le jeton, colle-le dans le terminal (rien ne s'affiche, c'est normal) puis <kbd>Entrée</kbd>.</p>
+          <div class="expect"><strong>Tu dois voir</strong>« Success! Logged in to HCP Terraform ».</div></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s6" data-title="Dépôt GitHub">
+      <div class="step-head"><span class="num">06</span><h2>Publier le code sur GitHub</h2><span class="time">~10 min</span></div>
+      <p class="why">Deux branches : <code>develop</code> déploie dev, <code>main</code> déploie staging et prod. C'est le workflow Git demandé par le sujet.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c6-1"><div class="body"><p>Sur <a href="https://github.com/new" target="_blank" rel="noopener">github.com/new</a> (crée un compte si besoin) : nom du dépôt <code>terraform-azure-project</code>, coche <b class="ui">Private</b>, ne coche <strong>rien d'autre</strong> (pas de README, pas de .gitignore), clique <b class="ui">Create repository</b>. Note ton pseudo GitHub dans le champ en haut de cette page.</p></div></li>
+        <li><input type="checkbox" id="c6-2"><div class="body"><p>Si c'est ta première utilisation de Git sur ce PC, présente-toi (remplace par tes infos) :</p>
+          <div class="cmd"><pre>git config --global user.name "Enzo Pereira"
+git config --global user.email "ton-email@exemple.com"</pre></div></div></li>
+        <li><input type="checkbox" id="c6-3"><div class="body"><p>Envoie le code sur <code>main</code> puis crée <code>develop</code> :</p>
+          <div class="cmd"><pre>git init -b main
+git add .
+git commit -m "feat: infrastructure Terraform multi-environnement"
+git remote add origin https://github.com/<span class="v" data-var="gh">ton-pseudo</span>/terraform-azure-project.git
+git push -u origin main
+git checkout -b develop
+git push -u origin develop</pre></div>
+          <p>Au premier <code>git push</code>, une fenêtre de connexion GitHub s'ouvre : clique <b class="ui">Sign in with your browser</b> puis <b class="ui">Authorize</b>.</p>
+          <div class="expect"><strong>Tu dois voir</strong>Sur la page GitHub du dépôt : les dossiers du projet, et le menu des branches qui contient <code>main</code> et <code>develop</code>.</div></div></li>
+        <li><input type="checkbox" id="c6-4"><div class="body"><p>Onglet <b class="ui">Actions</b> du dépôt : le pipeline <b class="ui">Terraform CI</b> tourne tout seul (format, validate ×3, tests, TFLint, Trivy, Sentinel).</p>
+          <div class="expect"><strong>Tu dois voir</strong>Après 2-3 minutes, une coche verte sur chaque job. Fais une capture d'écran : c'est une preuve pour la partie CI/CD.</div></div></li>
+        <li><input type="checkbox" id="c6-5"><div class="body"><p>Travail en équipe : <b class="ui">Settings</b> → <b class="ui">Collaborators</b> → <b class="ui">Add people</b> pour inviter tes coéquipiers.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s7" data-title="Service Principal">
+      <div class="step-head"><span class="num">07</span><h2>Créer le Service Principal Azure</h2><span class="time">~3 min</span></div>
+      <p class="why">C'est le « compte robot » qu'utilise HCP Terraform pour créer les ressources. Rôle Contributor limité à ton abonnement (exercice 03).</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c7-1"><div class="body">
+          <div class="cmd"><pre>powershell -ExecutionPolicy Bypass -File .\scripts\create-service-principal.ps1</pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>Un tableau de 4 lignes : <code>ARM_CLIENT_ID</code>, <code>ARM_CLIENT_SECRET</code>, <code>ARM_TENANT_ID</code>, <code>ARM_SUBSCRIPTION_ID</code>. <strong>Laisse ce terminal ouvert</strong> : le secret ne sera plus jamais affiché.</div>
+          <details class="stuck"><summary>Si « Insufficient privileges » ou « Authorization_RequestDenied »</summary><div><p>L'école interdit aux étudiants de créer des applications dans son annuaire. Pas grave : suis l'annexe <a href="#planb">Plan B</a> en bas de page à la place des étapes 7 à 10.</p></div></details></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s8" data-title="HCP Terraform : variables">
+      <div class="step-head"><span class="num">08</span><h2>Ranger les identifiants dans un variable set</h2><span class="time">~8 min</span></div>
+      <p class="why">Les secrets vivent dans HCP Terraform, chiffrés, jamais dans Git. Un « variable set » global les partage entre les 3 workspaces.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c8-1"><div class="body"><p>Dans HCP Terraform : menu de gauche <b class="ui">Settings</b> (de l'organisation) → <b class="ui">Variable sets</b> → <b class="ui">Create variable set</b>.</p>
+          <ul><li>Name : <code>azure-credentials</code></li><li>Variable set scope : <b class="ui">Apply globally</b> (« Apply to all current and future workspaces »)</li></ul></div></li>
+        <li><input type="checkbox" id="c8-2"><div class="body"><p>Clique <b class="ui">+ Add variable</b> pour chacune de ces 6 variables :</p>
+          <div class="tbl"><table>
+            <thead><tr><th>Catégorie</th><th>Key</th><th>Value</th><th>Sensitive</th></tr></thead>
+            <tbody>
+              <tr><td>Environment variable</td><td><code>ARM_CLIENT_ID</code></td><td>valeur du script</td><td>non</td></tr>
+              <tr><td>Environment variable</td><td><code>ARM_CLIENT_SECRET</code></td><td>valeur du script</td><td><strong>oui, cocher</strong></td></tr>
+              <tr><td>Environment variable</td><td><code>ARM_TENANT_ID</code></td><td>valeur du script</td><td>non</td></tr>
+              <tr><td>Environment variable</td><td><code>ARM_SUBSCRIPTION_ID</code></td><td>valeur du script</td><td>non</td></tr>
+              <tr><td>Terraform variable</td><td><code>ssh_public_key</code></td><td>ta clé <code>ssh-ed25519 AAAA…</code> (étape 4)</td><td>non</td></tr>
+              <tr><td>Terraform variable</td><td><code>allowed_ssh_cidr</code></td><td>ton IP <code>x.x.x.x/32</code> (étape 4)</td><td>non</td></tr>
+            </tbody></table></div>
+          <p>Ne coche pas « HCL ». Puis clique <b class="ui">Create variable set</b>. Tu peux maintenant fermer le terminal du script.</p></div></li>
+        <li><input type="checkbox" id="c8-3"><div class="body"><p>Facultatif (bonus monitoring) : ajoute une Terraform variable <code>alert_email</code> = ton e-mail pour recevoir une alerte si le CPU d'un serveur web dépasse 80 %.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s9" data-title="HCP Terraform : workspaces">
+      <div class="step-head"><span class="num">09</span><h2>Créer les 3 workspaces liés au dépôt</h2><span class="time">~12 min</span></div>
+      <p class="why">Un workspace par environnement, chacun lié à un dossier et une branche du dépôt (exercice 02). Refais la procédure 3 fois avec ce tableau :</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Workspace name</th><th>Working directory</th><th>VCS branch</th></tr></thead>
+        <tbody>
+          <tr><td><code>cloudtech-dev</code></td><td><code>environments/dev</code></td><td><code>develop</code></td></tr>
+          <tr><td><code>cloudtech-staging</code></td><td><code>environments/staging</code></td><td><code>main</code></td></tr>
+          <tr><td><code>cloudtech-prod</code></td><td><code>environments/prod</code></td><td><code>main</code></td></tr>
+        </tbody></table></div>
+      <ul class="todo" style="margin-top:14px">
+        <li><input type="checkbox" id="c9-1"><div class="body"><p><b class="ui">Workspaces</b> → <b class="ui">New</b> → <b class="ui">Workspace</b>. Choisis le projet <b class="ui">Default Project</b>, puis <b class="ui">Version Control Workflow</b>.</p></div></li>
+        <li><input type="checkbox" id="c9-2"><div class="body"><p>Choisis <b class="ui">GitHub.com</b>. La première fois, une fenêtre GitHub demande d'installer l'application HCP Terraform : choisis <b class="ui">Only select repositories</b> → <code>terraform-azure-project</code> → <b class="ui">Install</b>. Sélectionne ensuite le dépôt dans la liste.</p></div></li>
+        <li><input type="checkbox" id="c9-3"><div class="body"><p>Workspace Name : <code>cloudtech-dev</code> (exactement ce nom, il est écrit dans <code>versions.tf</code>). Ouvre <b class="ui">Advanced options</b> :</p>
+          <ul>
+            <li><b class="ui">Terraform Working Directory</b> : <code>environments/dev</code></li>
+            <li><b class="ui">Apply Method</b> : laisse <b class="ui">Manual apply</b></li>
+            <li><b class="ui">Automatic Run Triggering</b> : <b class="ui">Only trigger runs when files in specified paths change</b>, puis ajoute le chemin <code>/modules</code> (le dossier de travail est inclus automatiquement). Si tu ne trouves pas l'option, laisse « Always trigger runs ».</li>
+            <li><b class="ui">VCS branch</b> : <code>develop</code></li>
+          </ul>
+          <p>Clique <b class="ui">Create</b>. Sur l'écran « Configure variables », clique simplement <b class="ui">Go to workspace overview</b> : les variables viennent du variable set.</p></div></li>
+        <li><input type="checkbox" id="c9-4"><div class="body"><p>Recommence pour <code>cloudtech-staging</code> et <code>cloudtech-prod</code> avec les valeurs du tableau (branche <code>main</code>).</p>
+          <div class="expect"><strong>Tu dois voir</strong>3 workspaces dans la liste. Dans chacun, <b class="ui">Variables</b> affiche le variable set <code>azure-credentials</code>.</div>
+          <details class="stuck"><summary>Si un run démarre tout seul</summary><div><p>C'est normal à la création. Laisse-le faire son plan ; s'il attend une confirmation sur staging ou prod, clique <b class="ui">Discard run</b> : on ne déploie que dev pour l'instant.</p></div></details></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s10" data-title="Déployer dev">
+      <div class="step-head"><span class="num">10</span><h2>Déployer l'environnement dev</h2><span class="time">~15 min</span></div>
+      <ul class="todo">
+        <li><input type="checkbox" id="c10-1"><div class="body"><p>Workspace <code>cloudtech-dev</code> → bouton <b class="ui">New run</b> (en haut à droite) → Run type <b class="ui">Plan and apply</b> → <b class="ui">Start</b>.</p></div></li>
+        <li><input type="checkbox" id="c10-2"><div class="body"><p>Attends la fin du <b class="ui">Plan</b> (1-3 min ; le premier run enregistre des fournisseurs Azure, il peut être plus long).</p>
+          <div class="expect"><strong>Tu dois voir</strong>« Plan: 38 to add, 0 to change, 0 to destroy ». Capture d'écran : c'est ton <code>terraform plan</code>.</div></div></li>
+        <li><input type="checkbox" id="c10-3"><div class="body"><p>Clique <b class="ui">Confirm &amp; apply</b>, ajoute un commentaire (ex : « premier déploiement dev ») → <b class="ui">Confirm plan</b>. L'apply dure 5 à 10 minutes.</p>
+          <div class="expect"><strong>Tu dois voir</strong>« Apply finished », puis dans l'onglet <b class="ui">Outputs</b> : <code>website_url</code>, <code>lb_public_ip</code>, <code>ssh_commands</code>, <code>ssh_db_command</code>…</div>
+          <details class="stuck"><summary>Erreurs fréquentes</summary><div>
+            <p><code>RequestDisallowedByPolicy</code> : région non autorisée → étape 3, change <code>location</code>, commit + push sur develop, relance un run.</p>
+            <p><code>QuotaExceeded</code> ou « cores » : un autre environnement tourne encore → détruis-le (étape 15).</p>
+            <p><code>SkuNotAvailable</code> : B1s indisponible dans la région → autre région (étape 3).</p>
+            <p><code>MissingSubscriptionRegistration</code> : relance simplement un run quelques minutes plus tard (Azure finit d'activer un service).</p>
+            <p>Le plan échoue sur l'organisation : vérifie que <code>REMPLACE-MOI</code> a bien été remplacé et poussé sur <code>develop</code> (étape 5).</p></div></details></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s11" data-title="Tester dev">
+      <div class="step-head"><span class="num">11</span><h2>Tester l'infrastructure</h2><span class="time">~20 min</span></div>
+      <p class="why">Ce sont les tests demandés par le sujet. Attends 3 minutes après l'apply : les VMs installent nginx et PostgreSQL au démarrage. Fais une capture de chaque résultat.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c11-1"><div class="body"><p><strong>Site via le Load Balancer</strong> : ouvre l'URL de l'output <code>website_url</code> dans ton navigateur.</p>
+          <div class="expect"><strong>Tu dois voir</strong>« cloudtech · environnement dev » et « Servi par la VM : web-1 » (ou web-2).</div></div></li>
+        <li><input type="checkbox" id="c11-2"><div class="body"><p><strong>Tests automatiques</strong> (state, Azure CLI, répartition de charge, ports SSH). D'abord, récupère le state depuis HCP Terraform, puis lance le script :</p>
+          <div class="cmd"><pre>git pull
+terraform -chdir=environments/dev init
+powershell -ExecutionPolicy Bypass -File .\tests\smoke-test.ps1 -Environment dev</pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>La liste du state, les 3 VMs « VM running », web-1 et web-2 qui se partagent les requêtes, puis « TOUS LES TESTS SONT PASSÉS ».</div></div></li>
+        <li><input type="checkbox" id="c11-3"><div class="body"><p><strong>Commandes du sujet</strong> (vérification du state et Azure CLI) :</p>
+          <div class="cmd"><pre>terraform -chdir=environments/dev state list
+terraform -chdir=environments/dev state show 'module.compute.azurerm_linux_virtual_machine.web[0]'
+az vm list --resource-group rg-cloudtech-dev --output table
+az network lb list --resource-group rg-cloudtech-dev --output table</pre></div></div></li>
+        <li><input type="checkbox" id="c11-4"><div class="body"><p><strong>SSH vers web-1</strong> (copie la 1<sup>re</sup> commande de l'output <code>ssh_commands</code>, réponds <kbd>yes</kbd> la première fois) :</p>
+          <div class="cmd"><pre>terraform -chdir=environments/dev output ssh_commands</pre></div>
+          <p>Une fois connecté, vérifie qu'on joint la base depuis le web (remplace l'IP par l'output <code>db_private_ip</code>, souvent <code>10.10.2.4</code>), puis quitte :</p>
+          <div class="cmd"><pre>nc -zv 10.10.2.4 5432
+exit</pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>« Connection to 10.10.2.4 5432 port [tcp/postgresql] succeeded! ». Si <code>nc</code> n'existe pas : <code>timeout 3 bash -c '&lt;/dev/tcp/10.10.2.4/5432' &amp;&amp; echo OK</code></div></div></li>
+        <li><input type="checkbox" id="c11-5"><div class="body"><p><strong>SSH vers la base</strong> (rebond par web-1, la db n'a pas d'accès direct) : lance la commande de l'output <code>ssh_db_command</code>, puis sur la VM db :</p>
+          <div class="cmd"><pre>sudo cat /var/log/init-postgres.log
+sudo -u postgres psql -c '\du'
+exit</pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>« PostgreSQL prêt » et un rôle <code>app</code> dans la liste. Cela prouve que la VM a lu son mot de passe dans le Key Vault (aucun secret en clair).</div></div></li>
+        <li><input type="checkbox" id="c11-6"><div class="body"><p><strong>Sécurité réseau</strong> : depuis ton PC, la base doit être injoignable et SSH refusé si tu n'es pas sur ton IP. Les NSG le garantissent ; tu peux le montrer dans le portail : Resource Group <code>rg-cloudtech-dev</code> → <code>nsg-cloudtech-dev-db</code> → <b class="ui">Règles de sécurité de trafic entrant</b>.</p></div></li>
+        <li><input type="checkbox" id="c11-7"><div class="body"><p><strong>Network Watcher</strong> : dans la barre de recherche du portail Azure, tape <b class="ui">Network Watcher</b> → <b class="ui">Topologie</b> → choisis ton abonnement et le Resource Group <code>rg-cloudtech-dev</code>.</p>
+          <div class="expect"><strong>Tu dois voir</strong>Le schéma VNet → 2 subnets → NICs → VMs, le Load Balancer et les NSG. Capture pour le dossier.</div></div></li>
+        <li><input type="checkbox" id="c11-8"><div class="body"><p><strong>Portail Azure</strong> : ouvre <code>rg-cloudtech-dev</code> et fais une capture de la liste des ressources.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s12" data-title="Politiques Sentinel">
+      <div class="step-head"><span class="num">12</span><h2>Activer et démontrer les politiques Sentinel</h2><span class="time">~15 min</span></div>
+      <p class="why">3 politiques sont prêtes dans <code>policies/</code> : VMs limitées en dev, régions autorisées, tags obligatoires (avertissement).</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c12-1"><div class="body"><p>HCP Terraform → <b class="ui">Settings</b> (organisation) → <b class="ui">Policy sets</b> → <b class="ui">Connect a new policy set</b>.</p>
+          <ol>
+            <li>Policy framework : <b class="ui">Sentinel</b></li>
+            <li>Source : <b class="ui">Version control provider (VCS)</b> → <b class="ui">GitHub.com</b> → dépôt <code>terraform-azure-project</code></li>
+            <li>Name : <code>cloudtech-policies</code> · Policies path : <code>policies</code> · VCS branch : <code>main</code></li>
+            <li>Scope : <b class="ui">Policies enforced globally</b> (ou sélectionne les 3 workspaces)</li>
+            <li><b class="ui">Connect policy set</b></li>
+          </ol>
+          <details class="stuck"><summary>Si le menu Policy sets est verrouillé (offre payante)</summary><div><p>Selon l'offre, Sentinel peut être réservé aux plans payants. Dans ce cas, montre à l'oral le job <b class="ui">Tests des politiques Sentinel</b> de GitHub Actions : les 7 tests (dont « dev-grosse-vm-refusee ») prouvent que les politiques fonctionnent. Lance aussi le test en local si tu installes Sentinel.</p></div></details></div></li>
+        <li><input type="checkbox" id="c12-2"><div class="body"><p><strong>Démonstration</strong> : on essaie de mettre une grosse VM en dev via une Pull Request.</p>
+          <div class="cmd"><pre>git checkout develop
+git pull
+git checkout -b feature/test-sentinel</pre></div>
+          <p>Dans <code>environments/dev/terraform.tfvars</code>, remplace <code>web_vm_size  = "Standard_B1s"</code> par <code>web_vm_size  = "Standard_D2s_v5"</code>, enregistre, puis :</p>
+          <div class="cmd"><pre>git commit -am "test: VM trop puissante en dev"
+git push -u origin feature/test-sentinel</pre></div></div></li>
+        <li><input type="checkbox" id="c12-3"><div class="body"><p>Sur GitHub, clique le bandeau jaune <b class="ui">Compare &amp; pull request</b>. <strong>Base : develop</strong> (pas main !) → <b class="ui">Create pull request</b>.</p>
+          <div class="expect"><strong>Tu dois voir</strong>En bas de la PR, la CI GitHub (verte) et un check « Terraform Cloud/…/cloudtech-dev » en rouge. Clique <b class="ui">Details</b> : la politique <code>restrict-vm-size-dev</code> a refusé « Standard_D2s_v5 ». Capture.</div></div></li>
+        <li><input type="checkbox" id="c12-4"><div class="body"><p>Ferme la PR sans la fusionner (<b class="ui">Close pull request</b>), puis reviens sur develop :</p>
+          <div class="cmd"><pre>git checkout develop</pre></div></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s13" data-title="Workflow Git et CI">
+      <div class="step-head"><span class="num">13</span><h2>Montrer le workflow Git complet</h2><span class="time">~15 min</span></div>
+      <p class="why">feature → PR vers develop (déploie dev) → PR develop vers main (déploie staging et prod). C'est ce que tu présenteras.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c13-1"><div class="body"><p>Protège <code>main</code> : GitHub → <b class="ui">Settings</b> → <b class="ui">Branches</b> → <b class="ui">Add classic branch protection rule</b> (ou <b class="ui">Add rule</b>) → Branch name pattern <code>main</code> → coche <b class="ui">Require a pull request before merging</b> et <b class="ui">Require status checks to pass</b> (cherche et ajoute « Format (terraform fmt) » et « Sécurité (Trivy) ») → <b class="ui">Create</b>.</p></div></li>
+        <li><input type="checkbox" id="c13-2"><div class="body"><p>Fais une vraie petite évolution, par exemple ajouter un tag :</p>
+          <div class="cmd"><pre>git checkout -b feature/tag-owner</pre></div>
+          <p>Dans <code>environments/dev/terraform.tfvars</code>, ajoute à la fin la ligne <code>extra_tags = { owner = "enzo" }</code>, enregistre :</p>
+          <div class="cmd"><pre>git commit -am "feat: tag owner sur dev"
+git push -u origin feature/tag-owner</pre></div>
+          <p>Crée la PR vers <code>develop</code>, attends la CI verte et le plan HCP Terraform (« 0 to add, N to change » : seuls les tags changent), puis <b class="ui">Merge pull request</b>. Dans HCP Terraform, le run de <code>cloudtech-dev</code> attend ta confirmation : <b class="ui">Confirm &amp; apply</b>.</p></div></li>
+        <li><input type="checkbox" id="c13-3"><div class="body"><p>Question type de soutenance à savoir expliquer : « si je modifie cette variable, que se passe-t-il au prochain plan ? » — voir l'annexe <a href="#oral">Soutenance</a>.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s14" data-title="Staging et prod">
+      <div class="step-head"><span class="num">14</span><h2>Promouvoir vers staging puis prod</h2><span class="time">~30 min</span></div>
+      <p class="why">Le quota étudiant ne permet pas d'avoir tous les environnements en même temps. On les fait l'un après l'autre.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c14-1"><div class="body"><p>Détruis dev d'abord (procédure de l'étape 15) et attends la fin.</p></div></li>
+        <li><input type="checkbox" id="c14-2"><div class="body"><p>Sur GitHub : <b class="ui">Pull requests</b> → <b class="ui">New pull request</b> → base <code>main</code> ← compare <code>develop</code> → <b class="ui">Create pull request</b> → CI verte → <b class="ui">Merge pull request</b>.</p>
+          <div class="expect"><strong>Tu dois voir</strong>Un run démarre dans <code>cloudtech-staging</code> et un dans <code>cloudtech-prod</code>.</div></div></li>
+        <li><input type="checkbox" id="c14-3"><div class="body"><p><code>cloudtech-prod</code> : clique <b class="ui">Discard run</b> pour l'instant. <code>cloudtech-staging</code> : <b class="ui">Confirm &amp; apply</b>. Teste (étape 11 avec <code>-Environment staging</code>, Resource Group <code>rg-cloudtech-staging</code>), puis détruis staging.</p></div></li>
+        <li><input type="checkbox" id="c14-4"><div class="body"><p><code>cloudtech-prod</code> → <b class="ui">New run</b> → <b class="ui">Plan and apply</b>. Dans le plan, remarque que les disques sont en <code>StandardSSD_LRS</code> (fonction ternaire du module compute). Confirme, teste, détruis.</p>
+          <div class="note"><strong>Si le temps ou le crédit manque</strong>Le sujet accepte une « démonstration équivalente si une contrainte de quota empêche le déploiement » : un plan réussi de staging et prod suffit alors comme preuve.</div></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="s15" data-title="Tout détruire">
+      <div class="step-head"><span class="num">15</span><h2>Détruire après chaque session</h2><span class="time">~10 min</span></div>
+      <p class="why">À faire à la fin de chaque séance de travail. C'est aussi le test « Destruction » du sujet.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="c15-1"><div class="body"><p>Workspace concerné → <b class="ui">Settings</b> → <b class="ui">Destruction and Deletion</b> → <b class="ui">Queue destroy plan</b> → tape le nom du workspace pour confirmer → <b class="ui">Queue destroy plan</b>.</p></div></li>
+        <li><input type="checkbox" id="c15-2"><div class="body"><p>Quand le plan affiche « 0 to add, 0 to change, 38 to destroy » : <b class="ui">Confirm &amp; apply</b> → <b class="ui">Confirm plan</b>. Capture.</p></div></li>
+        <li><input type="checkbox" id="c15-3"><div class="body"><p>Vérifie qu'il ne reste rien :</p>
+          <div class="cmd"><pre>az group list --output table</pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>Plus de <code>rg-cloudtech-dev</code>. Il peut rester <code>NetworkWatcherRG</code> : il est gratuit, laisse-le.</div></div></li>
+        <li><input type="checkbox" id="c15-4"><div class="body"><p>Contrôle ton crédit : portail Azure → <b class="ui">Education</b> → <b class="ui">Vue d'ensemble</b> → « Crédits disponibles ». Le chiffre se met à jour avec 1 à 2 jours de retard.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="planb" data-title="Annexe : Plan B">
+      <div class="step-head"><span class="num">A</span><h2>Plan B : sans Service Principal</h2></div>
+      <p class="why">Seulement si l'étape 7 a échoué. Le state reste dans HCP Terraform, mais les commandes tournent sur ton PC avec ton compte <code>az login</code>.</p>
+      <ul class="todo">
+        <li><input type="checkbox" id="cb-1"><div class="body"><p>Fais l'étape 9 normalement, puis dans chaque workspace : <b class="ui">Settings</b> → <b class="ui">General</b> → <b class="ui">Execution Mode</b> : <b class="ui">Local</b> → <b class="ui">Save settings</b>. Dans le variable set, les 4 variables <code>ARM_*</code> ne sont plus nécessaires.</p></div></li>
+        <li><input type="checkbox" id="cb-2"><div class="body"><p>Dans le terminal VS Code (remplace la clé et l'IP par les tiennes) :</p>
+          <div class="cmd"><pre>$env:ARM_SUBSCRIPTION_ID = az account show --query id -o tsv
+$env:TF_VAR_ssh_public_key = Get-Content $HOME\.ssh\id_ed25519.pub
+$env:TF_VAR_allowed_ssh_cidr = "$(Invoke-RestMethod https://api.ipify.org)/32"
+terraform -chdir=environments/dev init
+terraform -chdir=environments/dev plan
+terraform -chdir=environments/dev apply</pre></div>
+          <p>Tape <kbd>yes</kbd> pour confirmer l'apply. Pour détruire : <code>terraform -chdir=environments/dev destroy</code>. Les politiques Sentinel ne s'exécutent pas en mode local : montre leurs tests dans GitHub Actions.</p></div></li>
+      </ul>
+    </section>
+
+    <section class="step" id="oral" data-title="Annexe : soutenance">
+      <div class="step-head"><span class="num">B</span><h2>Préparer la soutenance</h2></div>
+      <h3 class="sub">« Si je modifie cette variable, que se passe-t-il au prochain plan ? »</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Modification</th><th>Résultat du plan</th><th>Pourquoi</th></tr></thead>
+        <tbody>
+          <tr><td><code>web_vm_count = 3</code></td><td>+ 1 VM, 1 NIC, 1 règle NAT, 3 associations</td><td><code>count</code> ajoute l'index [2] ; les existants ne bougent pas</td></tr>
+          <tr><td><code>web_vm_count = 1</code></td><td>Destruction de web-2 et de ses ressources liées</td><td>Le dernier index de <code>count</code> est retiré</td></tr>
+          <tr><td><code>web_vm_size</code></td><td>Modification sur place (<code>~ update in-place</code>)</td><td>Azure redimensionne la VM (redémarrage) sans la recréer</td></tr>
+          <tr><td><code>location</code></td><td>Tout est remplacé (<code>-/+</code>)</td><td>La région est un attribut « ForceNew » : impossible de déplacer une ressource</td></tr>
+          <tr><td>CIDR d'un subnet</td><td>Subnet et NICs remplacés, VMs recréées</td><td>Changer l'adressage d'un subnet utilisé oblige à le recréer</td></tr>
+          <tr><td>Ajout d'une entrée dans <code>subnets</code></td><td>+ 1 subnet, rien d'autre</td><td><code>for_each</code> sur une map : chaque clé est indépendante</td></tr>
+          <tr><td>Ajout d'une règle dans <code>extra_nsg_rules</code></td><td>NSG modifié sur place</td><td>Le bloc <code>dynamic</code> régénère la liste <code>security_rule</code></td></tr>
+          <tr><td><code>allowed_ssh_cidr</code></td><td>NSG web modifié sur place</td><td>Seule la règle SSH change</td></tr>
+          <tr><td><code>environment = "prod"</code> dans dev</td><td>Disques remplacés (SSD), noms changés</td><td>Fonction ternaire sur le type de disque + préfixes de nommage</td></tr>
+        </tbody></table></div>
+      <h3 class="sub">Points à savoir expliquer</h3>
+      <ul class="todo">
+        <li><input type="checkbox" id="co-1"><div class="body"><p>Pourquoi aucune VM n'a d'IP publique (une seule IP : le Load Balancer ; SSH via NAT 2201/2202 ; sortie Internet par l'outbound rule).</p></div></li>
+        <li><input type="checkbox" id="co-2"><div class="body"><p>Comment le mot de passe PostgreSQL arrive sur la VM sans être en clair (random_password → Key Vault → identité managée → lecture au démarrage).</p></div></li>
+        <li><input type="checkbox" id="co-3"><div class="body"><p>Pourquoi le state est dans HCP Terraform (chiffré, verrouillé pendant un run, historique des versions, partagé en équipe).</p></div></li>
+        <li><input type="checkbox" id="co-4"><div class="body"><p>Les limites et améliorations : voir le tableau en fin de <code>docs/security.md</code> (OIDC au lieu du secret, Private Endpoints, Bastion, HTTPS).</p></div></li>
+        <li><input type="checkbox" id="co-5"><div class="body"><p>Complète <code>docs/fiche-mission.md</code> (ta tâche individuelle) avant le rendu.</p></div></li>
+      </ul>
+      <h3 class="sub">Captures à rassembler</h3>
+      <p>CI verte · plan dev · apply dev + outputs · site web (web-1 et web-2) · résultat du smoke test · SSH web et db · topologie Network Watcher · PR refusée par Sentinel · destroy · <code>az group list</code> vide.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  // Champs pseudo / organisation / région insérés dans les commandes.
+  var defaults = { gh: "ton-pseudo", org: "ton-organisation", loc: "francecentral" };
+  function applyVars() {
+    Object.keys(defaults).forEach(function (key) {
+      var input = document.querySelector('input[data-key="' + key + '"]');
+      var value = (input.value || "").trim() || defaults[key];
+      document.querySelectorAll('[data-var="' + key + '"]').forEach(function (el) { el.textContent = value; });
+    });
+  }
+  document.querySelectorAll(".vars input").forEach(function (input) {
+    var saved = store.get("var-" + input.dataset.key);
+    if (saved) input.value = saved;
+    input.addEventListener("input", function () { store.set("var-" + input.dataset.key, input.value.trim()); applyVars(); });
+  });
+  applyVars();
+
+  // Boutons Copier.
+  document.querySelectorAll(".cmd").forEach(function (box) {
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.textContent = "Copier";
+    btn.addEventListener("click", function () {
+      var text = box.querySelector("pre").textContent;
+      var done = function () { btn.textContent = "Copié"; setTimeout(function () { btn.textContent = "Copier"; }, 1500); };
+      var fallback = function () {
+        var range = document.createRange(); range.selectNodeContents(box.querySelector("pre"));
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        btn.textContent = "Ctrl+C";
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+      else fallback();
+    });
+    box.appendChild(btn);
+  });
+
+  // Sommaire + progression.
+  var toc = document.getElementById("toc");
+  var sections = Array.prototype.slice.call(document.querySelectorAll("section.step"));
+  sections.forEach(function (s) {
+    var li = document.createElement("li");
+    var a = document.createElement("a");
+    a.href = "#" + s.id;
+    a.innerHTML = '<span class="n"></span><span class="t"></span><span class="c"></span>';
+    a.querySelector(".n").textContent = s.querySelector(".num").textContent;
+    a.querySelector(".t").textContent = s.dataset.title;
+    li.appendChild(a); toc.appendChild(li);
+    s._link = a;
+  });
+
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('ul.todo input[type=checkbox]'));
+  function refresh() {
+    var total = 0, checked = 0;
+    sections.forEach(function (s) {
+      var own = s.querySelectorAll('ul.todo input[type=checkbox]');
+      var n = own.length, c = 0;
+      own.forEach(function (b) { if (b.checked) c++; });
+      total += n; checked += c;
+      s._link.querySelector(".c").textContent = n ? c + "/" + n : "";
+      var complete = n > 0 && c === n;
+      s.classList.toggle("complete", complete);
+      s._link.classList.toggle("complete", complete);
+    });
+    document.getElementById("bar").style.width = (total ? Math.round(checked / total * 100) : 0) + "%";
+    document.getElementById("bar-label").textContent = checked + " / " + total + " actions";
+  }
+  boxes.forEach(function (b) {
+    b.checked = store.get("chk-" + b.id) === "1";
+    b.addEventListener("change", function () { store.set("chk-" + b.id, b.checked ? "1" : "0"); refresh(); });
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    boxes.forEach(function (b) { b.checked = false; store.del("chk-" + b.id); });
+    refresh();
+  });
+  refresh();
+})();
+</script>

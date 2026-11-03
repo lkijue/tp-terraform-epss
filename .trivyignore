@@ -1,0 +1,23 @@
+# Exceptions Trivy assumées (justifiées dans docs/security.md).
+
+# AZU-0047 : le NSG web autorise HTTP (port 80) depuis Internet.
+# C'est le but : le site est public, derrière le Load Balancer. SSH reste
+# limité à l'IP de l'administrateur (validation Terraform qui refuse 0.0.0.0/0).
+AVD-AZU-0047
+
+# AZU-0012 : pare-feu du Storage Account des diagnostics en "Allow".
+# Les diagnostics de démarrage Azure et les runners HCP Terraform (IPs
+# dynamiques) doivent y accéder. Aucun accès anonyme (blobs non publics, TLS 1.2).
+AVD-AZU-0012
+
+# AZU-0013 : le Key Vault accepte les connexions réseau publiques (authentifiées).
+# Même raison : runners HCP Terraform à IPs dynamiques. Les droits sont limités
+# par access policies (la VM db ne peut que lire).
+AVD-AZU-0013
+
+# AZU-0016 : purge protection désactivée pour permettre "terraform destroy"
+# et la recréation du coffre dans un contexte de projet/démo.
+AVD-AZU-0016
+
+# AZU-0068 : faux positif, les NICs sont bien attachées via count.
+AVD-AZU-0068

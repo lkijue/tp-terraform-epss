@@ -1,0 +1,28 @@
+# Faux plan : VMs B1s en francecentral, correctement taggées.
+resource_changes = {
+	"module.compute.azurerm_linux_virtual_machine.web[0]": {
+		"address": "module.compute.azurerm_linux_virtual_machine.web[0]",
+		"mode":    "managed",
+		"type":    "azurerm_linux_virtual_machine",
+		"change": {
+			"actions": ["create"],
+			"after": {
+				"size":     "Standard_B1s",
+				"location": "francecentral",
+				"tags":     {"project": "cloudtech", "environment": "dev"},
+			},
+		},
+	},
+	"azurerm_resource_group.this": {
+		"address": "azurerm_resource_group.this",
+		"mode":    "managed",
+		"type":    "azurerm_resource_group",
+		"change": {
+			"actions": ["create"],
+			"after": {
+				"location": "francecentral",
+				"tags":     {"project": "cloudtech", "environment": "dev"},
+			},
+		},
+	},
+}

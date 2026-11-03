@@ -1,0 +1,50 @@
+#cloud-config
+# Serveur de base de données : PostgreSQL.
+# Le mot de passe n'est PAS dans ce fichier : la VM le lit au démarrage dans
+# le Key Vault grâce à son identité managée (aucun secret en clair).
+package_update: true
+packages:
+  - postgresql
+  - jq
+  - curl
+
+write_files:
+  - path: /usr/local/bin/init-postgres.sh
+    permissions: "0750"
+    content: |
+      #!/bin/bash
+      set -uo pipefail
+      PASSWORD=""
+      # Jusqu'à 10 minutes d'essais : le temps que les droits Key Vault se propagent.
+      for i in $(seq 1 30); do
+        TOKEN=$(curl -sf -H "Metadata: true" \
+          "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fvault.azure.net&client_id=${identity_client_id}" \
+          | jq -r .access_token)
+        if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
+          PASSWORD=$(curl -sf -H "Authorization: Bearer $TOKEN" \
+            "https://${key_vault_name}.vault.azure.net/secrets/${secret_name}?api-version=7.4" \
+            | jq -r .value)
+        fi
+        if [ -n "$PASSWORD" ] && [ "$PASSWORD" != "null" ]; then
+          break
+        fi
+        echo "Secret pas encore lisible (essai $i), nouvelle tentative dans 20 s..."
+        sleep 20
+      done
+      if [ -z "$PASSWORD" ] || [ "$PASSWORD" = "null" ]; then
+        echo "ERREUR : impossible de lire le secret dans le Key Vault" >&2
+        exit 1
+      fi
+
+      PG_CONF=$(ls /etc/postgresql/*/main/postgresql.conf | head -n 1)
+      PG_DIR=$(dirname "$PG_CONF")
+      sed -i "s/^#\?listen_addresses.*/listen_addresses = '*'/" "$PG_CONF"
+      echo "host all all ${web_subnet_prefix} scram-sha-256" >> "$PG_DIR/pg_hba.conf"
+      systemctl restart postgresql
+
+      sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE app LOGIN PASSWORD '$PASSWORD';"
+      sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE DATABASE appdb OWNER app;"
+      echo "PostgreSQL prêt : base appdb, utilisateur app."
+
+runcmd:
+  - /usr/local/bin/init-postgres.sh > /var/log/init-postgres.log 2>&1

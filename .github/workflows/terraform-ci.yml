@@ -1,0 +1,99 @@
+# Intégration continue : vérifie chaque push / pull request AVANT que
+# HCP Terraform ne lance le plan / apply sur Azure.
+#   develop -> workspace cloudtech-dev
+#   main    -> workspaces cloudtech-staging et cloudtech-prod
+name: Terraform CI
+
+on:
+  push:
+    branches: [main, develop, "feature/**"]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: "1.17.1"
+
+jobs:
+  fmt:
+    name: Format (terraform fmt)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - run: terraform fmt -check -recursive -diff
+
+  validate:
+    name: Validate (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, staging, prod]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: terraform init (sans backend)
+        run: terraform -chdir=environments/${{ matrix.environment }} init -backend=false -input=false
+      - name: terraform validate
+        run: terraform -chdir=environments/${{ matrix.environment }} validate
+
+  test:
+    name: Tests Terraform (mock, sans Azure)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Tests du module network
+        run: |
+          terraform -chdir=modules/network init -input=false
+          terraform -chdir=modules/network test
+      - name: Tests de l'environnement complet
+        run: |
+          terraform -chdir=environments/dev init -backend=false -input=false
+          terraform -chdir=environments/dev test
+
+  tflint:
+    name: Lint (TFLint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: TFLint
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker run --rm -e GITHUB_TOKEN -v "$PWD:/data" -w /data \
+            --entrypoint sh ghcr.io/terraform-linters/tflint:v0.65.0 \
+            -c "tflint --init && tflint --recursive --format compact"
+
+  trivy:
+    name: Sécurité (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Trivy config scan (bloque sur HIGH / CRITICAL)
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src aquasec/trivy:0.76.1 \
+            config --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore .
+
+  sentinel:
+    name: Tests des politiques Sentinel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Installer Sentinel
+        run: |
+          curl -sSfL -o sentinel.zip https://releases.hashicorp.com/sentinel/0.41.0/sentinel_0.41.0_linux_amd64.zip
+          unzip -q sentinel.zip -d "$HOME/bin"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: sentinel test
+        working-directory: policies
+        run: sentinel test

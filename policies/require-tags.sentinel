@@ -1,0 +1,24 @@
+# Recommandation (advisory) : toute ressource taggable doit porter les tags
+# "project" et "environment" (suivi des coûts par environnement).
+import "tfplan/v2" as tfplan
+
+required_tags = ["project", "environment"]
+
+taggable = filter tfplan.resource_changes as _, rc {
+	rc.mode is "managed" and
+	(rc.change.actions contains "create" or rc.change.actions contains "update") and
+	keys(rc.change.after) contains "tags"
+}
+
+violations = filter taggable as _, rc {
+	rc.change.after.tags is null or
+	any required_tags as t { keys(rc.change.after.tags) not contains t }
+}
+
+for violations as address, _ {
+	print("Tags manquants (project, environment) :", address)
+}
+
+main = rule {
+	length(violations) is 0
+}

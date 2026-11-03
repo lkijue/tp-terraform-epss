@@ -1,0 +1,27 @@
+# Interdit les VMs trop puissantes (donc trop chères) dans le workspace dev.
+import "tfplan/v2" as tfplan
+import "tfrun"
+import "strings"
+
+allowed_dev_sizes = ["Standard_B1s", "Standard_B1ls", "Standard_B1ms"]
+
+is_dev = strings.has_suffix(tfrun.workspace.name, "-dev")
+
+vms = filter tfplan.resource_changes as _, rc {
+	rc.mode is "managed" and
+	rc.type in ["azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine"] and
+	(rc.change.actions contains "create" or rc.change.actions contains "update")
+}
+
+violations = filter vms as _, vm {
+	vm.change.after.size not in allowed_dev_sizes
+}
+
+for violations as address, vm {
+	print("Taille interdite en dev :", address, "=", vm.change.after.size,
+		"- tailles autorisées :", allowed_dev_sizes)
+}
+
+main = rule {
+	not is_dev or length(violations) is 0
+}

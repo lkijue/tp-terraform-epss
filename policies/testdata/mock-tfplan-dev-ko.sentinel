@@ -1,0 +1,16 @@
+# Faux plan : VM trop puissante, région interdite, tags manquants.
+resource_changes = {
+	"module.compute.azurerm_linux_virtual_machine.web[0]": {
+		"address": "module.compute.azurerm_linux_virtual_machine.web[0]",
+		"mode":    "managed",
+		"type":    "azurerm_linux_virtual_machine",
+		"change": {
+			"actions": ["create"],
+			"after": {
+				"size":     "Standard_D4s_v5",
+				"location": "eastus",
+				"tags":     {"project": "cloudtech"},
+			},
+		},
+	},
+}
