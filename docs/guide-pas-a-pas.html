@@ -136,16 +136,13 @@ html { scroll-behavior: smooth; }
     <h1>Déployer l'infra multi-environnement, clic par clic</h1>
     <p>Le code Terraform est déjà écrit et testé dans <code>Downloads\terraform-azure-project</code>. Ce guide te fait installer les outils, brancher Azure, GitHub et HCP Terraform, déployer l'environnement dev, le tester, puis tout détruire. Coche chaque case au fur et à mesure : ta progression reste enregistrée dans ce navigateur.</p>
     <div class="vars" role="group" aria-label="Tes identifiants, insérés automatiquement dans les commandes">
-      <label for="v-gh">Ton pseudo GitHub
-        <input id="v-gh" data-key="gh" placeholder="ex : enzo-pereira" autocomplete="off" spellcheck="false">
-      </label>
       <label for="v-org">Ton organisation HCP Terraform
         <input id="v-org" data-key="org" placeholder="ex : cloudtech-enzo" autocomplete="off" spellcheck="false">
       </label>
       <label for="v-loc">Ta région Azure
         <input id="v-loc" data-key="loc" placeholder="francecentral" autocomplete="off" spellcheck="false">
       </label>
-      <small>Remplis ces champs quand tu les connais (étapes 3, 5 et 6) : les commandes en jaune se mettent à jour toutes seules.</small>
+      <small>Remplis ces champs quand tu les connais (étapes 3 et 5) : les commandes en jaune se mettent à jour toutes seules.</small>
     </div>
   </header>
 
@@ -234,7 +231,15 @@ code .</pre></div>
       <ul class="todo">
         <li><input type="checkbox" id="c5-1"><div class="body"><p>Va sur <a href="https://app.terraform.io/public/signup/account" target="_blank" rel="noopener">app.terraform.io</a>, crée un compte (e-mail + mot de passe), puis valide le lien reçu par e-mail.</p></div></li>
         <li><input type="checkbox" id="c5-2"><div class="body"><p>Choisis <b class="ui">Start from scratch</b> (ou <b class="ui">Create organization</b>). Nom de l'organisation : par exemple <code>cloudtech-</code> + ton pseudo (minuscules, tirets). Ce nom doit être unique au monde. Écris-le dans le champ « Ton organisation HCP Terraform » en haut de la page.</p></div></li>
-        <li><input type="checkbox" id="c5-3"><div class="body"><p>Dans VS Code : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>H</kbd>, cherche <code>REMPLACE-MOI</code>, remplace par <code><span data-var="org">ton-organisation</span></code>, clique sur <b class="ui">Remplacer tout</b> (icône à droite du champ). Les 3 fichiers <code>environments/*/versions.tf</code> sont modifiés. Enregistre (<kbd>Ctrl</kbd>+<kbd>K</kbd> puis <kbd>S</kbd>).</p></div></li>
+        <li><input type="checkbox" id="c5-3"><div class="body"><p>Dans VS Code : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>H</kbd>, cherche <code>REMPLACE-MOI</code>, remplace par <code><span data-var="org">ton-organisation</span></code>, clique sur <b class="ui">Remplacer tout</b> (icône à droite du champ). Les 3 fichiers <code>environments/*/versions.tf</code> sont modifiés. Enregistre (<kbd>Ctrl</kbd>+<kbd>K</kbd> puis <kbd>S</kbd>).</p>
+          <p>Envoie la modification sur GitHub, sur les deux branches :</p>
+          <div class="cmd"><pre>git checkout develop
+git commit -am "chore: organisation HCP Terraform"
+git push
+git checkout main
+git merge develop
+git push
+git checkout develop</pre></div></div></li>
         <li><input type="checkbox" id="c5-4"><div class="body"><p>Connecte ton terminal à HCP Terraform (sert plus tard à lire le state) :</p>
           <div class="cmd"><pre>terraform login</pre></div>
           <p>Tape <kbd>yes</kbd>. Une page s'ouvre : clique <b class="ui">Create API token</b>, copie le jeton, colle-le dans le terminal (rien ne s'affiche, c'est normal) puis <kbd>Entrée</kbd>.</p>
@@ -243,26 +248,14 @@ code .</pre></div>
     </section>
 
     <section class="step" id="s6" data-title="Dépôt GitHub">
-      <div class="step-head"><span class="num">06</span><h2>Publier le code sur GitHub</h2><span class="time">~10 min</span></div>
-      <p class="why">Deux branches : <code>develop</code> déploie dev, <code>main</code> déploie staging et prod. C'est le workflow Git demandé par le sujet.</p>
+      <div class="step-head"><span class="num">06</span><h2>Vérifier le dépôt GitHub</h2><span class="time">~3 min</span></div>
+      <p class="why">Le code est déjà en ligne sur le dépôt de l'équipe, <a href="https://github.com/lkijue/tp-terraform-epss" target="_blank" rel="noopener">lkijue/tp-terraform-epss</a>, avec deux branches : <code>develop</code> déploie dev, <code>main</code> déploie staging et prod. C'est le workflow Git demandé par le sujet.</p>
       <ul class="todo">
-        <li><input type="checkbox" id="c6-1"><div class="body"><p>Sur <a href="https://github.com/new" target="_blank" rel="noopener">github.com/new</a> (crée un compte si besoin) : nom du dépôt <code>terraform-azure-project</code>, coche <b class="ui">Private</b>, ne coche <strong>rien d'autre</strong> (pas de README, pas de .gitignore), clique <b class="ui">Create repository</b>. Note ton pseudo GitHub dans le champ en haut de cette page.</p></div></li>
-        <li><input type="checkbox" id="c6-2"><div class="body"><p>Si c'est ta première utilisation de Git sur ce PC, présente-toi (remplace par tes infos) :</p>
-          <div class="cmd"><pre>git config --global user.name "Enzo Pereira"
-git config --global user.email "ton-email@exemple.com"</pre></div></div></li>
-        <li><input type="checkbox" id="c6-3"><div class="body"><p>Envoie le code sur <code>main</code> puis crée <code>develop</code> :</p>
-          <div class="cmd"><pre>git init -b main
-git add .
-git commit -m "feat: infrastructure Terraform multi-environnement"
-git remote add origin https://github.com/<span class="v" data-var="gh">ton-pseudo</span>/terraform-azure-project.git
-git push -u origin main
-git checkout -b develop
-git push -u origin develop</pre></div>
-          <p>Au premier <code>git push</code>, une fenêtre de connexion GitHub s'ouvre : clique <b class="ui">Sign in with your browser</b> puis <b class="ui">Authorize</b>.</p>
-          <div class="expect"><strong>Tu dois voir</strong>Sur la page GitHub du dépôt : les dossiers du projet, et le menu des branches qui contient <code>main</code> et <code>develop</code>.</div></div></li>
+        <li><input type="checkbox" id="c6-1"><div class="body"><p>Ouvre <a href="https://github.com/lkijue/tp-terraform-epss" target="_blank" rel="noopener">github.com/lkijue/tp-terraform-epss</a>.</p>
+          <div class="expect"><strong>Tu dois voir</strong>Les dossiers du projet (<code>environments</code>, <code>modules</code>, <code>policies</code>…) et, dans le menu des branches, <code>main</code> et <code>develop</code>.</div></div></li>
         <li><input type="checkbox" id="c6-4"><div class="body"><p>Onglet <b class="ui">Actions</b> du dépôt : le pipeline <b class="ui">Terraform CI</b> tourne tout seul (format, validate ×3, tests, TFLint, Trivy, Sentinel).</p>
           <div class="expect"><strong>Tu dois voir</strong>Après 2-3 minutes, une coche verte sur chaque job. Fais une capture d'écran : c'est une preuve pour la partie CI/CD.</div></div></li>
-        <li><input type="checkbox" id="c6-5"><div class="body"><p>Travail en équipe : <b class="ui">Settings</b> → <b class="ui">Collaborators</b> → <b class="ui">Add people</b> pour inviter tes coéquipiers.</p></div></li>
+        <li><input type="checkbox" id="c6-5"><div class="body"><p>Travail en équipe : chaque coéquipier doit être invité par lkijue (propriétaire) via <b class="ui">Settings</b> → <b class="ui">Collaborators</b> → <b class="ui">Add people</b>. Ensuite, chacun récupère le code avec <code>git clone https://github.com/lkijue/tp-terraform-epss.git</code>.</p></div></li>
       </ul>
     </section>
 
@@ -311,7 +304,11 @@ git push -u origin develop</pre></div>
         </tbody></table></div>
       <ul class="todo" style="margin-top:14px">
         <li><input type="checkbox" id="c9-1"><div class="body"><p><b class="ui">Workspaces</b> → <b class="ui">New</b> → <b class="ui">Workspace</b>. Choisis le projet <b class="ui">Default Project</b>, puis <b class="ui">Version Control Workflow</b>.</p></div></li>
-        <li><input type="checkbox" id="c9-2"><div class="body"><p>Choisis <b class="ui">GitHub.com</b>. La première fois, une fenêtre GitHub demande d'installer l'application HCP Terraform : choisis <b class="ui">Only select repositories</b> → <code>terraform-azure-project</code> → <b class="ui">Install</b>. Sélectionne ensuite le dépôt dans la liste.</p></div></li>
+        <li><input type="checkbox" id="c9-2"><div class="body"><p>Choisis <b class="ui">GitHub.com</b>. La première fois, une fenêtre GitHub demande d'installer l'application HCP Terraform : choisis <b class="ui">Only select repositories</b> → <code>tp-terraform-epss</code> → <b class="ui">Install</b>. Sélectionne ensuite le dépôt dans la liste.</p>
+          <details class="stuck"><summary>Si tp-terraform-epss n'apparaît pas</summary><div>
+            <p>Le dépôt appartient à lkijue : GitHub ne laisse que son propriétaire y installer une application. Deux solutions :</p>
+            <p>1. Invite lkijue dans ton organisation HCP Terraform (<b class="ui">Settings</b> → <b class="ui">Users</b> → <b class="ui">Invite a user</b>, avec son e-mail) et fais-lui réaliser cette étape 09 depuis son compte : il pourra installer l'application sur son dépôt.</p>
+            <p>2. Ou demande à lkijue de transférer le dépôt dans une organisation GitHub dont vous êtes tous les deux propriétaires (<b class="ui">Settings</b> → <b class="ui">Transfer ownership</b>).</p></div></details></div></li>
         <li><input type="checkbox" id="c9-3"><div class="body"><p>Workspace Name : <code>cloudtech-dev</code> (exactement ce nom, il est écrit dans <code>versions.tf</code>). Ouvre <b class="ui">Advanced options</b> :</p>
           <ul>
             <li><b class="ui">Terraform Working Directory</b> : <code>environments/dev</code></li>
@@ -384,7 +381,7 @@ exit</pre></div>
         <li><input type="checkbox" id="c12-1"><div class="body"><p>HCP Terraform → <b class="ui">Settings</b> (organisation) → <b class="ui">Policy sets</b> → <b class="ui">Connect a new policy set</b>.</p>
           <ol>
             <li>Policy framework : <b class="ui">Sentinel</b></li>
-            <li>Source : <b class="ui">Version control provider (VCS)</b> → <b class="ui">GitHub.com</b> → dépôt <code>terraform-azure-project</code></li>
+            <li>Source : <b class="ui">Version control provider (VCS)</b> → <b class="ui">GitHub.com</b> → dépôt <code>tp-terraform-epss</code></li>
             <li>Name : <code>cloudtech-policies</code> · Policies path : <code>policies</code> · VCS branch : <code>main</code></li>
             <li>Scope : <b class="ui">Policies enforced globally</b> (ou sélectionne les 3 workspaces)</li>
             <li><b class="ui">Connect policy set</b></li>
@@ -500,7 +497,7 @@ terraform -chdir=environments/dev apply</pre></div>
   };
 
   // Champs pseudo / organisation / région insérés dans les commandes.
-  var defaults = { gh: "ton-pseudo", org: "ton-organisation", loc: "francecentral" };
+  var defaults = { org: "ton-organisation", loc: "francecentral" };
   function applyVars() {
     Object.keys(defaults).forEach(function (key) {
       var input = document.querySelector('input[data-key="' + key + '"]');
