@@ -50,7 +50,7 @@ terraform-azure-project/
 
 ```powershell
 az login
-powershell -ExecutionPolicy Bypass -File .\scripts\check-azure.ps1 -Location francecentral
+powershell -ExecutionPolicy Bypass -File .\scripts\check-azure.ps1 -Location denmarkeast
 ```
 
 Puis suivre [docs/deployment.md](docs/deployment.md). Les runs (plan / apply / destroy) sont exécutés par HCP Terraform, déclenchés par Git :

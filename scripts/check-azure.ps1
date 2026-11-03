@@ -3,10 +3,10 @@
   Vérifie que l'abonnement Azure for Students peut accueillir le projet :
   régions autorisées, quotas de vCPU, disponibilité de la taille Standard_B1s.
 .EXAMPLE
-  .\scripts\check-azure.ps1 -Location francecentral
+  .\scripts\check-azure.ps1 -Location denmarkeast
 #>
 param(
-    [string]$Location = "francecentral",
+    [string]$Location = "denmarkeast",
     [string]$VmSize = "Standard_B1s"
 )
 
@@ -32,18 +32,27 @@ if ($regionPolicy) {
 }
 
 Write-Host "`n=== Quotas vCPU dans $Location ===" -ForegroundColor Cyan
-az vm list-usage --location $Location `
-    --query "[?contains(name.value,'cores') || contains(name.value,'BS')].{Quota:localName, Utilise:currentValue, Limite:limit}" -o table
+$usage = az vm list-usage --location $Location -o json | ConvertFrom-Json
+$quotas = $usage | Where-Object { $_.localName -match "Total Regional|Standard BS" }
+if ($quotas) {
+    $quotas | ForEach-Object { Write-Host ("  {0,-38} {1} utilisés / {2}" -f $_.localName, $_.currentValue, $_.limit) }
+} else {
+    # Abonnement neuf : le service Compute n'est pas encore enregistré.
+    Write-Host "Quotas illisibles : lance 'az provider register --namespace Microsoft.Compute', attends 2 minutes et relance le script." -ForegroundColor Yellow
+}
 Write-Host "Un environnement complet utilise 3 vCPU (3 x $VmSize)." -ForegroundColor Yellow
 
 Write-Host "`n=== Disponibilité de $VmSize dans $Location ===" -ForegroundColor Cyan
-$sku = az vm list-skus --location $Location --size $VmSize --resource-type virtualMachines -o json | ConvertFrom-Json
+# --all : sans ce flag, Azure masque les tailles bloquées pour l'abonnement.
+$sku = az vm list-skus --location $Location --size $VmSize --resource-type virtualMachines --all -o json | ConvertFrom-Json
 $exact = $sku | Where-Object { $_.name -eq $VmSize }
+# Une restriction de type "Zone" n'empêche pas de déployer sans zone (cas de ce projet).
+$blocking = $exact.restrictions | Where-Object { $_.type -eq "Location" }
 if (-not $exact) {
     Write-Host "ATTENTION : $VmSize n'existe pas dans $Location." -ForegroundColor Red
-} elseif ($exact.restrictions.Count -gt 0) {
-    Write-Host "ATTENTION : $VmSize est restreinte pour ton abonnement dans $Location :" -ForegroundColor Red
-    $exact.restrictions | ForEach-Object { Write-Host "  - $($_.reasonCode)" }
+} elseif ($blocking) {
+    Write-Host "ATTENTION : $VmSize est bloquée pour ton abonnement dans $Location ($($blocking[0].reasonCode))." -ForegroundColor Red
+    Write-Host "Essaie une autre région autorisée de la liste ci-dessus." -ForegroundColor Red
 } else {
     Write-Host "OK : $VmSize est disponible." -ForegroundColor Green
 }

@@ -1,20 +1,14 @@
-# N'autorise le déploiement que dans les régions validées par l'équipe
-# (doivent aussi être autorisées par l'abonnement Azure for Students).
+# N'autorise le déploiement que dans les régions permises par la politique
+# de l'abonnement Azure for Students (vérifiées avec scripts/check-azure.ps1).
 import "tfplan/v2" as tfplan
 import "strings"
 
 param allowed_locations default [
+	"denmarkeast",
 	"francecentral",
-	"westeurope",
-	"northeurope",
-	"swedencentral",
 	"germanywestcentral",
-	"switzerlandnorth",
-	"spaincentral",
-	"italynorth",
 	"polandcentral",
-	"norwayeast",
-	"uksouth",
+	"switzerlandnorth",
 	"global",
 ]
 

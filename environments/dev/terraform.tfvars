@@ -2,7 +2,7 @@
 # ssh_public_key et allowed_ssh_cidr sont fournies par HCP Terraform.
 
 environment = "dev"
-location    = "francecentral"
+location    = "denmarkeast"
 
 address_space = ["10.10.0.0/16"]
 subnets = {

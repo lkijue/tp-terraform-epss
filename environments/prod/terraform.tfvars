@@ -3,7 +3,7 @@
 # En prod, les disques passent automatiquement en SSD (fonction ternaire du module compute).
 
 environment = "prod"
-location    = "francecentral"
+location    = "denmarkeast"
 
 address_space = ["10.30.0.0/16"]
 subnets = {

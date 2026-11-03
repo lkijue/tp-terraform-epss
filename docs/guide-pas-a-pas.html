@@ -140,7 +140,7 @@ html { scroll-behavior: smooth; }
         <input id="v-org" data-key="org" placeholder="ex : cloudtech-enzo" autocomplete="off" spellcheck="false">
       </label>
       <label for="v-loc">Ta région Azure
-        <input id="v-loc" data-key="loc" placeholder="francecentral" autocomplete="off" spellcheck="false">
+        <input id="v-loc" data-key="loc" placeholder="denmarkeast" autocomplete="off" spellcheck="false">
       </label>
       <small>Remplis ces champs quand tu les connais (étapes 3 et 5) : les commandes en jaune se mettent à jour toutes seules.</small>
     </div>
@@ -200,12 +200,12 @@ code .</pre></div>
           <div class="cmd"><pre>az login</pre></div>
           <p>Une page web s'ouvre : choisis ton compte <code>enzo.pereira2@ecoles-…</code>. De retour dans le terminal, si une liste d'abonnements s'affiche, tape le numéro de <b class="ui">Azure for Students</b> puis <kbd>Entrée</kbd>.</p></div></li>
         <li><input type="checkbox" id="c3-2"><div class="body"><p>Lance le script de vérification :</p>
-          <div class="cmd"><pre>powershell -ExecutionPolicy Bypass -File .\scripts\check-azure.ps1 -Location <span class="v" data-var="loc">francecentral</span></pre></div>
-          <div class="expect"><strong>Tu dois voir</strong>« OK : francecentral est autorisée » et « OK : Standard_B1s est disponible », plus un tableau de quotas où « Total Regional vCPUs » a une limite d'au moins 3.</div>
-          <details class="stuck"><summary>Si la région n'est PAS autorisée</summary><div>
-            <p>Le script affiche la liste des régions autorisées. Choisis-en une en Europe (ex : <code>swedencentral</code>, <code>germanywestcentral</code>, <code>spaincentral</code>…), relance le script avec <code>-Location</code> = cette région jusqu'à avoir les deux OK.</p>
-            <p>Puis dans VS Code : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>H</kbd> (remplacer dans les fichiers), cherche <code>francecentral</code>, remplace par ta région, clique sur l'icône <b class="ui">Remplacer tout</b>. Les 3 <code>terraform.tfvars</code> et la liste des régions autorisées par Sentinel sont mis à jour d'un coup.</p></div></details>
-          <p>Note ta région dans le champ « Ta région Azure » en haut de cette page.</p></div></li>
+          <div class="cmd"><pre>powershell -ExecutionPolicy Bypass -File .\scripts\check-azure.ps1 -Location <span class="v" data-var="loc">denmarkeast</span></pre></div>
+          <div class="expect"><strong>Tu dois voir</strong>« OK : denmarkeast est autorisée » et « OK : Standard_B1s est disponible », plus les quotas où « Total Regional vCPUs » a une limite d'au moins 3.</div>
+          <div class="note"><strong>Déjà vérifié pour ton abonnement</strong>Régions autorisées : denmarkeast, francecentral, germanywestcentral, polandcentral, switzerlandnorth. La série B (B1s) est bloquée à francecentral mais disponible à <code>denmarkeast</code>, qui est donc la région du projet (déjà réglée dans les 3 <code>terraform.tfvars</code>).</div>
+          <details class="stuck"><summary>Si une taille ou une région est bloquée</summary><div>
+            <p>Relance le script avec une autre région autorisée (<code>-Location</code>) jusqu'à avoir les deux OK.</p>
+            <p>Puis dans VS Code : <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>H</kbd> (remplacer dans les fichiers), cherche <code>location    = "denmarkeast"</code>, remplace par <code>location    = "ta-region"</code>, clique sur l'icône <b class="ui">Remplacer tout</b> : les 3 <code>terraform.tfvars</code> sont mis à jour.</p></div></details></div></li>
       </ul>
     </section>
 
@@ -497,7 +497,7 @@ terraform -chdir=environments/dev apply</pre></div>
   };
 
   // Champs pseudo / organisation / région insérés dans les commandes.
-  var defaults = { org: "ton-organisation", loc: "francecentral" };
+  var defaults = { org: "ton-organisation", loc: "denmarkeast" };
   function applyVars() {
     Object.keys(defaults).forEach(function (key) {
       var input = document.querySelector('input[data-key="' + key + '"]');
