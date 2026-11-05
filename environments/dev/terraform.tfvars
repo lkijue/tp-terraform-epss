@@ -11,5 +11,5 @@ subnets = {
 }
 
 web_vm_count = 2
-web_vm_size  = "Standard_B1s"
+web_vm_size  = "Standard_D2s_v5"
 db_vm_size   = "Standard_B1s"
