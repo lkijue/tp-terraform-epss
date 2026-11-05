@@ -2,9 +2,9 @@ terraform {
   required_version = ">= 1.9.0"
 
   # State stocké dans HCP Terraform (Terraform Cloud) : chiffré, verrouillé,
-  # versionné. Remplacer REMPLACE-MOI par le nom de ton organisation HCP Terraform.
+  # versionné. Organisation HCP Terraform de l'équipe.
   cloud {
-    organization = "REMPLACE-MOI"
+    organization = "cloudtech-enzo-sebastian"
 
     workspaces {
       name = "cloudtech-prod"
