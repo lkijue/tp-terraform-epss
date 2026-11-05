@@ -50,7 +50,8 @@ Write-Host "`n=== 3. Load Balancer : http://$ip ===" -ForegroundColor Cyan
 $servers = @{}
 1..12 | ForEach-Object {
     # Nouvelle connexion TCP à chaque requête pour laisser le LB répartir.
-    $html = curl.exe -s --max-time 5 -H "Connection: close" "http://$ip/"
+    # -join : curl renvoie un tableau de lignes, sur lequel -match ne remplit pas $Matches.
+    $html = (curl.exe -s --max-time 5 -H "Connection: close" "http://$ip/") -join "`n"
     if ($html -match "<strong>([^<]+)</strong>") { $servers[$Matches[1]] = 1 + $servers[$Matches[1]] }
 }
 $servers.GetEnumerator() | ForEach-Object { Write-Host "  $($_.Key) a répondu $($_.Value) fois" }
