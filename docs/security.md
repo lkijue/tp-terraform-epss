@@ -29,10 +29,19 @@ Le `.gitignore` exclut `*.tfstate`, `*.auto.tfvars`, `*.local.tfvars`, `secrets.
 | Politique | Niveau | Effet |
 |---|---|---|
 | `restrict-vm-size-dev` | hard-mandatory | Refuse toute VM hors `Standard_B1s/B1ls/B1ms` dans le workspace dev |
-| `allowed-locations` | hard-mandatory | Refuse tout déploiement hors des régions européennes autorisées |
+| `allowed-locations` | advisory | Avertit de tout déploiement hors des régions européennes autorisées |
 | `require-tags` | advisory | Avertit si une ressource n'a pas les tags `project` et `environment` |
 
 Les politiques sont testées en CI (`sentinel test`, 7 cas).
+
+Le plan gratuit de HCP Terraform impose deux limites :
+
+- pas de policy set relié au dépôt Git : les politiques sont créées une par une
+  dans HCP (policy set `cloudtech-policies`, « Individually managed policies »,
+  appliqué à toute l'organisation), en copiant les fichiers de `policies/`, qui restent la référence ;
+- une seule politique bloquante : `restrict-vm-size-dev` (protection du budget).
+  `allowed-locations` est en advisory, car les régions sont déjà bloquées côté Azure
+  par la politique de l'abonnement Azure for Students (`RequestDisallowedByPolicy`).
 
 ## Analyse statique (CI)
 
