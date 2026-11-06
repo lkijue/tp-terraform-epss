@@ -6,9 +6,11 @@ policy "restrict-vm-size-dev" {
   enforcement_level = "hard-mandatory"
 }
 
+# Advisory : le plan gratuit n'autorise qu'une politique bloquante, et les régions
+# sont déjà bloquées par la politique Azure de l'abonnement (voir docs/security.md).
 policy "allowed-locations" {
   source            = "./allowed-locations.sentinel"
-  enforcement_level = "hard-mandatory"
+  enforcement_level = "advisory"
 }
 
 policy "require-tags" {
