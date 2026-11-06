@@ -105,13 +105,14 @@ run "environnement_dev_complet" {
     error_message = "Nom du Resource Group inattendu."
   }
 
+  # Le nombre attendu suit terraform.tfvars : changer web_vm_count ne casse pas le test.
   assert {
-    condition     = length(module.compute.web_vm_names) == 2
-    error_message = "Il doit y avoir 2 VMs web."
+    condition     = length(module.compute.web_vm_names) == var.web_vm_count
+    error_message = "Il doit y avoir autant de VMs web que web_vm_count."
   }
 
   assert {
-    condition     = length(output.ssh_commands) == 2
+    condition     = length(output.ssh_commands) == var.web_vm_count
     error_message = "Il doit y avoir une commande SSH par VM web."
   }
 

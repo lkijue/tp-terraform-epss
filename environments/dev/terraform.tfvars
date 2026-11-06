@@ -10,6 +10,6 @@ subnets = {
   db  = { address_prefix = "10.10.2.0/24" }
 }
 
-web_vm_count = 2
+web_vm_count = 3
 web_vm_size  = "Standard_B1s"
 db_vm_size   = "Standard_B1s"
